@@ -219,6 +219,9 @@ func main() {
 	e.POST("/signup", signup)
 	e.POST("/login", login)
 	e.GET("/ws", handleWS)
+	e.GET("/favicon.ico", func(c echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	})
 
 	d := e.Group("/dashboard")
 	d.Use(echomw.WithConfig(echomw.Config{
