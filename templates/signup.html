@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signup</title>
+  <link rel="stylesheet" href="/static/signup.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script>
+    document.body.addEventListener('htmx:configRequest', (e) => {
+      console.log("HTMX Sending Request →", e.detail.path);
+    });
+    document.body.addEventListener('htmx:responseError', (e) => {
+      console.log("HTMX Error Response →", e.detail);
+    });
+  </script>
+</head>
+<body>
+  <div class="signup-container">
+    <h2 class="signup-title">Create Account</h2>
+    <form 
+      hx-post="/signup"
+      hx-on::after-request="if(event.detail.successful === false) {
+        document.querySelector('#errors').innerHTML = event.detail.xhr.responseText;
+      }"
+    >
+      <div class="signup-input-group">
+        <input type="text" id="signup-name" name="signup-name" required>
+        <label for="signup-name">Full Name</label>
+      </div>
+      <div class="signup-input-group">
+        <input type="email" id="signup-email" name="signup-email" required>
+        <label for="signup-email">Email</label>
+      </div>
+      <div class="signup-input-group">
+        <input type="password" id="signup-password" name="signup-password" required>
+        <label for="signup-password">Password</label>
+      </div>
+      <div class="signup-input-group">
+        <input type="password" id="signup-confirm" name="signup-confirm" required>
+        <label for="signup-confirm">Confirm Password</label>
+      </div>
+      <button type="submit" class="signup-btn">Sign Up</button>
+      <div class="signup-toggle-form">
+        Already have an account? <a href="/">Login</a>
+      </div>
+    </form>
+    <div id="errors">
+      {{ template "errors" . }}
+    </div>
+  </div>
+</body>
+</html>
+
+{{ define "errors" }}
+{{ if .Errors }}
+  <ul>
+    {{ range .Errors }}
+      <li class="error">{{ . }}</li>
+    {{ end }}
+  </ul>
+{{ end }}
+{{ end }}

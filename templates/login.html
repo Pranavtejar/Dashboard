@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glassmorphic Login</title>
+  <link rel="stylesheet" href="/static/login.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script>
+    document.body.addEventListener('htmx:configRequest', (e) => {
+      console.log("HTMX Sending Request →", e.detail.path);
+    });
+    document.body.addEventListener('htmx:responseError', (e) => {
+      console.log("HTMX Error Response →", e.detail);
+    });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="form-container">
+      <h2 class="form-title">Welcome Back</h2>
+      <form 
+        hx-post="/login"
+        hx-on::after-request="if(event.detail.successful === false) {
+          document.querySelector('#errors').innerHTML = event.detail.xhr.responseText;
+        }"
+      >
+        <div class="input-group">
+          <input type="email" id="email" name="email" required />
+          <label for="email">Email</label>
+        </div>
+        <div class="input-group">
+          <input type="password" id="password" name="password" required />
+          <label for="password">Password</label>
+        </div>
+        <div class="forgot-password">
+          <a href="/signup">Sign Up</a>
+        </div>
+        <button type="submit" class="btn">Login</button>
+      </form>
+      <div id="errors">
+        {{ template "errors" . }}
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+{{ define "errors" }}
+{{ if .Errors }}
+  <ul>
+    {{ range .Errors }}
+      <li class="error">{{ . }}</li>
+    {{ end }}
+  </ul>
+{{ end }}
+{{ end }}

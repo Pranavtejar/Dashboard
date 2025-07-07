@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Minimal Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+    <div class="dashboard">
+        <div class="panel">
+            <h2 class="username">{{ .Username }}</h2>
+
+            <div class="info">
+                <p id="timer">Time: --:--:--</p>
+                <p>🧠 Fun Fact: Bananas are berries, but strawberries aren't.</p>
+            </div>
+
+            <div class="extras">
+                <div class="card">
+                    <h3>🟢 Active Users</h3>
+                    <p>4</p>
+                </div>
+                <div class="card">
+                    <h3>🌐 Region</h3>
+                    <p>Asia-Pacific</p>
+                </div>
+                <div class="card">
+                    <h3>📡 WebSocket</h3>
+                    <p>Connected</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = new WebSocket("ws://" + location.host + "/ws");
+        socket.onmessage = function (event) {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "timer") {
+                document.getElementById("timer").innerText = `Time: ${msg.data}`;
+            }
+        };
+    </script>
+</body>
+</html>

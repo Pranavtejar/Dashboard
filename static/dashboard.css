@@ -1,0 +1,141 @@
+/* General Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #121212 0%, #1e1e1e 50%, #121212 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #e0e0e0;
+}
+
+/* Dashboard Container */
+.dashboard {
+    width: 90%;
+    max-width: 800px;
+    padding: 2rem;
+}
+
+/* Glass Panel */
+.panel {
+    background: rgba(30, 30, 30, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 8px 32px 0 rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Silver Gradient Overlay */
+.panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, 
+        rgba(200, 200, 200, 0) 0%, 
+        rgba(200, 200, 200, 0.6) 50%, 
+        rgba(200, 200, 200, 0) 100%);
+}
+
+/* Username Styling */
+.username {
+    font-size: 2.2rem;
+    margin: 0 0 1.5rem 0;
+    background: linear-gradient(90deg, #e0e0e0 0%, #ffffff 50%, #a0a0a0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+/* Info Section */
+.info {
+    margin-bottom: 2rem;
+}
+
+.info p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+#timer {
+    font-size: 1.3rem;
+    font-weight: 300;
+    color: #c0c0c0;
+    font-family: 'Courier New', monospace;
+}
+
+/* Cards Container */
+.extras {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.2rem;
+    margin-top: 2rem;
+}
+
+/* Individual Cards */
+.card {
+    background: rgba(50, 50, 50, 0.3);
+    border-radius: 12px;
+    padding: 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    background: rgba(70, 70, 70, 0.4);
+    transform: translateY(-3px);
+}
+
+.card h3 {
+    margin: 0 0 0.8rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #b0b0b0;
+}
+
+.card p {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: #f0f0f0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .panel {
+        padding: 1.5rem;
+    }
+    
+    .username {
+        font-size: 1.8rem;
+    }
+    
+    .extras {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation for WebSocket Connected */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.card:nth-child(3) p {
+    color: #4caf50;
+    animation: pulse 2s infinite;
+}

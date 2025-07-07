@@ -1,0 +1,117 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #111111, #333333);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.signup-container {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 40px;
+}
+
+.signup-title {
+    color: white;
+    font-size: 28px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
+}
+
+.signup-input-group {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.signup-input-group input {
+    width: 100%;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.signup-input-group input:focus {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.signup-input-group label {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    pointer-events: none;
+    transition: all 0.3s;
+}
+
+.signup-input-group input:focus + label,
+.signup-input-group input:valid + label {
+    top: -10px;
+    left: 15px;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0 5px;
+    color: white;
+    border-radius: 4px;
+}
+
+.signup-btn {
+    width: 100%;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.signup-btn:hover {
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.signup-toggle-form {
+    text-align: center;
+    margin-top: 25px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+}
+
+.signup-toggle-form a {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
+    transition: all 0.3s;
+}
+
+.signup-toggle-form a:hover {
+    text-decoration: underline;
+}
