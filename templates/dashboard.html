@@ -51,6 +51,7 @@
         socket.onmessage = function (event) {
             const msg = JSON.parse(event.data);
             if (msg.type === "timer") {
+                onsole.log("Timer message:", msg.data);
                 document.getElementById("timer").innerText = `Time: ${msg.data}`;
             }
         };
