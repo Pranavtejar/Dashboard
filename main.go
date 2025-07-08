@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -24,9 +25,11 @@ import (
 var (
 	db        *sql.DB
 	jwtSecret []byte
-	upgrader  = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	clients   = make(map[*websocket.Conn]bool)
-	mu        sync.Mutex
+	upgrader  = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+	clients = make(map[*websocket.Conn]bool)
+	mu      sync.Mutex
 )
 
 type Template struct {
@@ -38,16 +41,26 @@ type User struct {
 	Pass     string
 }
 
+type Res struct {
+	Errors []string
+}
+
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	return t.tmpl.ExecuteTemplate(w, name, data)
 }
 
 func initDB() error {
 	var err error
-	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		return fmt.Errorf("DATABASE_URL not set")
+	}
+	db, err = sql.Open("postgres", dbURL)
 	if err != nil {
 		return err
 	}
+	db.SetMaxOpenConns(10)
+	db.SetConnMaxLifetime(time.Minute * 5)
 	return db.Ping()
 }
 
@@ -61,22 +74,28 @@ func createTable() error {
 	return err
 }
 
-func showLogin(c echo.Context) error  { return c.Render(http.StatusOK, "login.html", nil) }
-func showSignup(c echo.Context) error { return c.Render(http.StatusOK, "signup.html", nil) }
+func showLogin(c echo.Context) error {
+	return c.Render(http.StatusOK, "login.html", nil)
+}
+
+func showSignup(c echo.Context) error {
+	return c.Render(http.StatusOK, "signup.html", nil)
+}
 
 func signup(c echo.Context) error {
 	name := c.FormValue("signup-name")
 	email := c.FormValue("signup-email")
-	pass := c.FormValue("signup-password")
+	password := c.FormValue("signup-password")
 	confirm := c.FormValue("signup-confirm")
 
-	if pass != confirm {
-		return c.Render(http.StatusBadRequest, "errors", map[string][]string{"Errors": {"Passwords do not match"}})
+	if password != confirm {
+		return c.Render(http.StatusBadRequest, "errors", Res{Errors: []string{"Passwords do not match"}})
 	}
-	hash, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
-	_, err := db.Exec(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3)`, name, email, string(hash))
+
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	_, err := db.Exec(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3)`, name, email, string(hashed))
 	if err != nil {
-		return c.Render(http.StatusBadRequest, "errors", map[string][]string{"Errors": {"User exists or error"}})
+		return c.Render(http.StatusBadRequest, "errors", Res{Errors: []string{"User already exists or invalid"}})
 	}
 
 	c.Response().Header().Set("HX-Redirect", "/login")
@@ -90,11 +109,12 @@ func login(c echo.Context) error {
 	var u User
 	err := db.QueryRow(`SELECT name, password FROM users WHERE email = $1`, email).Scan(&u.Username, &u.Pass)
 	if err != nil || bcrypt.CompareHashAndPassword([]byte(u.Pass), []byte(pass)) != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid login")
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": u.Username,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 	t, _ := token.SignedString(jwtSecret)
 
@@ -104,6 +124,7 @@ func login(c echo.Context) error {
 		Path:     "/",
 		HttpOnly: true,
 	})
+
 	c.Response().Header().Set("HX-Redirect", "/dashboard")
 	return c.NoContent(http.StatusOK)
 }
@@ -111,14 +132,28 @@ func login(c echo.Context) error {
 func showDashboard(c echo.Context) error {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
+	username := claims["username"].(string)
 	return c.Render(http.StatusOK, "dashboard.html", map[string]string{
-		"Username": claims["username"].(string),
+		"Username": username,
 	})
 }
 
-func sendJSON(conn *websocket.Conn, kind string, data interface{}) error {
-	msg, _ := json.Marshal(map[string]interface{}{"type": kind, "data": data})
-	return conn.WriteMessage(websocket.TextMessage, msg)
+func sendJSON(kind string, data interface{}) {
+	payload := map[string]interface{}{
+		"type": kind,
+		"data": data,
+	}
+	msg, _ := json.Marshal(payload)
+
+	mu.Lock()
+	defer mu.Unlock()
+	for conn := range clients {
+		err := conn.WriteMessage(websocket.TextMessage, msg)
+		if err != nil {
+			conn.Close()
+			delete(clients, conn)
+		}
+	}
 }
 
 func handleWS(c echo.Context) error {
@@ -138,30 +173,32 @@ func handleWS(c echo.Context) error {
 			mu.Unlock()
 			conn.Close()
 		}()
+
 		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
+			_, _, err := conn.ReadMessage()
+			if err != nil {
 				break
 			}
 		}
 	}()
 
-	go func(c *websocket.Conn) {
+	go func() {
 		for {
 			time.Sleep(1 * time.Second)
-			if err := sendJSON(c, "timer", time.Now().Format("15:04:05")); err != nil {
-				return
-			}
+			sendJSON("timer", time.Now().Format("15:04:05"))
 		}
-	}(conn)
+	}()
 
 	return nil
 }
 
 func main() {
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
 	jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 	if len(jwtSecret) == 0 {
-		log.Fatal("JWT_SECRET not set")
+		log.Fatal("JWT_SECRET is not set")
 	}
 	if err := initDB(); err != nil {
 		log.Fatal(err)
@@ -169,26 +206,26 @@ func main() {
 	if err := createTable(); err != nil {
 		log.Fatal(err)
 	}
+
 	e := echo.New()
 	e.Use(middleware.Logger(), middleware.Recover())
 	e.Static("/static", "static")
-	e.Renderer = &Template{tmpl: template.Must(template.ParseGlob("templates/*.html"))}
+	e.Renderer = &Template{
+		tmpl: template.Must(template.ParseGlob("templates/*.html")),
+	}
 
 	e.GET("/", showLogin)
 	e.GET("/signup", showSignup)
 	e.POST("/signup", signup)
 	e.POST("/login", login)
-	e.GET("/favicon.ico", func(c echo.Context) error {
-		return c.NoContent(http.StatusNoContent)
-	})
 	e.GET("/ws", handleWS)
 
-auth := e.Group("/dashboard")
-	auth.Use(echomw.WithConfig(echomw.Config{
+	d := e.Group("/dashboard")
+	d.Use(echomw.WithConfig(echomw.Config{
 		SigningKey:  jwtSecret,
 		TokenLookup: "cookie:auth_token",
 	}))
-	auth.GET("", showDashboard)
+	d.GET("", showDashboard)
 
 	port := os.Getenv("PORT")
 	if port == "" {
