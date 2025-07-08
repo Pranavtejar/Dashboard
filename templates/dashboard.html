@@ -32,29 +32,36 @@
         </div>
     </div>
 
-    <script>
-        const wsStatus = document.getElementById("ws-status");
-        const socket = new WebSocket("ws://dashboard-5gr3.onrender.com/ws");
+<script>
+    const wsStatus = document.getElementById("ws-status");
 
-        socket.onopen = () => {
-            wsStatus.innerText = "Connected";
-        };
+    const socket = new WebSocket(
+        (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws"
+    );
 
-        socket.onerror = () => {
-            wsStatus.innerText = "Error";
-        };
+    socket.onopen = () => {
+        wsStatus.innerText = "Connected";
+        console.log("✅ WebSocket connected");
+    };
 
-        socket.onclose = () => {
-            wsStatus.innerText = "Disconnected";
-        };
+    socket.onerror = (e) => {
+        wsStatus.innerText = "Error";
+        console.error("❌ WebSocket error:", e);
+    };
 
-        socket.onmessage = function (event) {
-            const msg = JSON.parse(event.data);
-            if (msg.type === "timer") {
-                onsole.log("Timer message:", msg.data);
-                document.getElementById("timer").innerText = `Time: ${msg.data}`;
-            }
-        };
-    </script>
+    socket.onclose = () => {
+        wsStatus.innerText = "Disconnected";
+        console.warn("⚠️ WebSocket closed");
+    };
+
+    socket.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "timer") {
+            console.log("🕒 Timer message:", msg.data);
+            document.getElementById("timer").innerText = `Time: ${msg.data}`;
+        }
+    };
+</script>
+
 </body>
 </html>
