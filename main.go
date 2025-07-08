@@ -92,7 +92,6 @@ func login(c echo.Context) error {
 	if err != nil || bcrypt.CompareHashAndPassword([]byte(u.Pass), []byte(pass)) != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid login")
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": u.Username,
 		"exp":      time.Now().Add(24 * time.Hour).Unix(),
@@ -117,16 +116,9 @@ func showDashboard(c echo.Context) error {
 	})
 }
 
-func sendJSON(kind string, data interface{}) {
+func sendJSON(conn *websocket.Conn, kind string, data interface{}) error {
 	msg, _ := json.Marshal(map[string]interface{}{"type": kind, "data": data})
-	mu.Lock()
-	defer mu.Unlock()
-	for c := range clients {
-		if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
-			c.Close()
-			delete(clients, c)
-		}
-	}
+	return conn.WriteMessage(websocket.TextMessage, msg)
 }
 
 func handleWS(c echo.Context) error {
@@ -134,6 +126,7 @@ func handleWS(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	mu.Lock()
 	clients[conn] = true
 	mu.Unlock()
@@ -152,16 +145,16 @@ func handleWS(c echo.Context) error {
 		}
 	}()
 
-	return nil
-}
-
-func startGlobalTimer() {
-	go func() {
+	go func(c *websocket.Conn) {
 		for {
 			time.Sleep(1 * time.Second)
-			sendJSON("timer", time.Now().Format("15:04:05"))
+			if err := sendJSON(c, "timer", time.Now().Format("15:04:05")); err != nil {
+				return
+			}
 		}
-	}()
+	}(conn)
+
+	return nil
 }
 
 func main() {
@@ -176,7 +169,6 @@ func main() {
 	if err := createTable(); err != nil {
 		log.Fatal(err)
 	}
-
 	e := echo.New()
 	e.Use(middleware.Logger(), middleware.Recover())
 	e.Static("/static", "static")
@@ -191,14 +183,12 @@ func main() {
 	})
 	e.GET("/ws", handleWS)
 
-	auth := e.Group("/dashboard")
+auth := e.Group("/dashboard")
 	auth.Use(echomw.WithConfig(echomw.Config{
 		SigningKey:  jwtSecret,
 		TokenLookup: "cookie:auth_token",
 	}))
 	auth.GET("", showDashboard)
-
-	startGlobalTimer()
 
 	port := os.Getenv("PORT")
 	if port == "" {
