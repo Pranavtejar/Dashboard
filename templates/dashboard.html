@@ -18,22 +18,36 @@
             <div class="extras">
                 <div class="card">
                     <h3>🟢 Active Users</h3>
-                    <p>4</p>
+                    <p>4</p> <!-- Static for now -->
                 </div>
                 <div class="card">
                     <h3>🌐 Region</h3>
-                    <p>Asia-Pacific</p>
+                    <p>Asia-Pacific</p> <!-- Static placeholder -->
                 </div>
                 <div class="card">
                     <h3>📡 WebSocket</h3>
-                    <p>Connected</p>
+                    <p id="ws-status">Connecting...</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        const wsStatus = document.getElementById("ws-status");
         const socket = new WebSocket("ws://" + location.host + "/ws");
+
+        socket.onopen = () => {
+            wsStatus.innerText = "Connected";
+        };
+
+        socket.onerror = () => {
+            wsStatus.innerText = "Error";
+        };
+
+        socket.onclose = () => {
+            wsStatus.innerText = "Disconnected";
+        };
+
         socket.onmessage = function (event) {
             const msg = JSON.parse(event.data);
             if (msg.type === "timer") {
