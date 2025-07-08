@@ -34,7 +34,7 @@
 
     <script>
         const wsStatus = document.getElementById("ws-status");
-        const socket = new WebSocket("ws://" + location.host + "/ws");
+        const socket = new WebSocket("ws://dashboard-5gr3.onrender.com/ws");
 
         socket.onopen = () => {
             wsStatus.innerText = "Connected";
