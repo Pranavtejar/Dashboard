@@ -49,11 +49,11 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 }
 
 func initDB() error {
-	var err error
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		return fmt.Errorf("DATABASE_URL not set")
 	}
+	var err error
 	db, err = sql.Open("postgres", dbURL)
 	if err != nil {
 		return err
@@ -192,9 +192,6 @@ func handleWS(c echo.Context) error {
 }
 
 func main() {
-	os.Setenv("DATABASE_URL", "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable")
-	os.Setenv("JWT_SECRET", "supersecretrandomkey123")
-
 	jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 	if len(jwtSecret) == 0 {
 		log.Fatal("JWT_SECRET is not set")
